@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"jassue-gin/bootstrap"
 	"jassue-gin/global"
 	"net/http"
@@ -14,6 +15,21 @@ func main() {
 	// 初始化日志
 	global.App.Log = bootstrap.InitializeLog()
 	global.App.Log.Info("log init success!")
+
+	// 初始化数据库
+	global.App.DB = bootstrap.InitializeDB()
+
+	// 程序关闭前，释放数据库连接
+	defer func() {
+		if global.App.DB != nil {
+			db, _ := global.App.DB.DB()
+			err := db.Close()
+			if err != nil {
+				global.App.Log.Error("Database closed fail", zap.Any("err", err))
+				return
+			}
+		}
+	}()
 
 	r := gin.Default()
 
